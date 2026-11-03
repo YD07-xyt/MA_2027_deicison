@@ -1,2 +1,11 @@
-# MA_2027_deicison
-MA robomaster2027 哨兵机器人决策系统
+# MA 2027 decision
+
+🟦 蓝色：节点返回 SUCCESS（执行成功）。
+
+🟥 红色：节点返回 FAILURE（执行失败）。
+
+🟩 绿色：节点正在执行 RUNNING（比如你的 Nav2Pose 正在导航中）。
+
+⬜ 灰色：节点还未被执行（闲置状态）。
+
+🟨 黄色：节点被强制终止 HALTED。

@@ -22,8 +22,9 @@ public:
         logger_ = logger::create_colored_logger("serial");
     };
     ~SerialDriver() {
-        socket_port_.close();
-        serial_port_.close();
+        boost::system::error_code ignored;
+        socket_port_.close(ignored);
+        serial_port_.close(ignored);
     }
     bool open_socket(std::string receive_name, std::string send_name);
     bool open_serial(std::string serial_name, int baud_rate);
@@ -38,13 +39,14 @@ public:
     bool receive_all_socket(std::vector<ReceiveSocketData>& data, int timeout_ms);
 
 private:
+    // 在 timeout_ms 内等待 fd 可读，使接收线程能周期性检查停止标志
+    static bool wait_readable(int fd, int timeout_ms);
     //TODO：模板统一
     bool find_packet_in_buffer(std::vector<ReceiveSerialData>& data);
     bool find_packet_in_buffer_socket(std::vector<ReceiveSocketData>& data);
 
 private:
     int max_try_;
-    boost::system::error_code ec;
     boost::circular_buffer<uint8_t> serial_rx_buffer_;
     boost::circular_buffer<uint8_t> socket_rx_buffer_;
     std::mutex serial_buffer_mutex_;

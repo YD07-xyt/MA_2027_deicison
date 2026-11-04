@@ -7,6 +7,7 @@ void SerialDriver::init_socket(std::string receive_name, std::string send_name, 
     this->max_try_ = max_try;
 }
 bool SerialDriver::open_socket(std::string receive_name, std::string send_name) {
+    boost::system::error_code ec;
     this->socket_receive_name_ = receive_name;
     this->socket_send_name_ = send_name;
     logger::info(logger_, "socket_send_name:{},socket_receive_name:{}", send_name, receive_name);
@@ -53,6 +54,7 @@ bool SerialDriver::open_socket(std::string receive_name, std::string send_name) 
 }
 
 bool SerialDriver::send_socket(const SendSocketData& send_data) {
+    boost::system::error_code ec;
     std::vector<uint8_t> buffer = send_data.serialize();
 
     size_t sent = socket_port_.send(boost::asio::buffer(buffer), 0, ec);
@@ -68,15 +70,16 @@ bool SerialDriver::send_socket(const SendSocketData& send_data) {
     return true;
 }
 bool SerialDriver::reopen_socket(std::string receive_name, std::string send_name, int max_try) {
+    boost::system::error_code ec;
     if (socket_port_.is_open()) {
        socket_port_.close(ec);
     }
     bool is_open = false;
-    logger::info(logger_, "尝试重新打开端口：{}", ec.message());
+    logger::info(logger_, "尝试重新打开端口");
     for (int i = 0; i < max_try; i++) {
         is_open = open_socket(receive_name, send_name);
         if (is_open) {
-            logger::info(logger_, "重新打开端口成功：{}", ec.message());
+            logger::info(logger_, "重新打开端口成功");
             break;
         }
         if (i == (max_try - 1)) {
@@ -99,14 +102,17 @@ bool SerialDriver::receive_all_socket(std::vector<ReceiveSocketData>& data, int 
     // ---------- 1. 非阻塞读取一个 UDP 数据报 ----------
     uint8_t temp_buffer[32768]; // 足够容纳最大 UDP 数据报
     boost::system::error_code ec;
+    // 超时前不调用 receive，避免阻塞导致析构时 join 挂起
+    if (!wait_readable(socket_port_.native_handle(), timeout_ms)) {
+        return false;
+    }
     size_t bytes_read = socket_port_.receive(
         boost::asio::buffer(temp_buffer, sizeof(temp_buffer)),
-        0, // flags = 0 表示阻塞直到有数据，但这里我们放在循环外部，由调用者决定
+        0,
         ec
     );
 
     if (ec == boost::asio::error::would_block) {
-        // 没有数据可读（如果 socket 被设为非阻塞，但这里我们没有设置）
         return false;
     }
     if (ec) {

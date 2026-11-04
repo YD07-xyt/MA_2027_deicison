@@ -1,4 +1,5 @@
 #include "serial/serial.h"
+#include <poll.h>
 #include <string>
 
 namespace io {
@@ -9,7 +10,16 @@ void SerialDriver::init_serial(std::string serial_name, int baud_rate, int max_t
     this->max_try_ = max_try;
 }
 
+bool SerialDriver::wait_readable(int fd, int timeout_ms) {
+    pollfd pfd{};
+    pfd.fd = fd;
+    pfd.events = POLLIN;
+    // 返回值大于 0 表示有可读数据或出现错误/挂起，交给 read 处理；fd 无效时 poll 返回 0
+    return ::poll(&pfd, 1, timeout_ms) > 0;
+}
+
 bool SerialDriver::open_serial(std::string serial_name, int baud_rate) {
+    boost::system::error_code ec;
     serial_port_.open(serial_name, ec);
 
     if (ec) {
@@ -30,6 +40,7 @@ bool SerialDriver::open_serial(std::string serial_name, int baud_rate) {
 }
 
 bool SerialDriver::send_serial(const SendSerialData& send_data) {
+    boost::system::error_code ec;
     std::vector<uint8_t> buffer = send_data.serialize();
 
     size_t sent = boost::asio::write(serial_port_, boost::asio::buffer(buffer), ec);
@@ -52,6 +63,12 @@ bool SerialDriver::receive_all_serial(std::vector<ReceiveSerialData>& data, int 
     }
 
     data.clear();
+
+    boost::system::error_code ec;
+    // 无数据时在超时后返回，避免 read_some 永久阻塞导致析构 join 挂起
+    if (!wait_readable(serial_port_.native_handle(), timeout_ms)) {
+        return false;
+    }
 
     uint8_t temp_buffer[1024];
     size_t bytes_read = serial_port_.read_some(boost::asio::buffer(temp_buffer, sizeof(temp_buffer)), ec);
@@ -120,6 +137,7 @@ bool SerialDriver::find_packet_in_buffer(std::vector<ReceiveSerialData>& data) {
     return false;
 }
 bool SerialDriver::reopen_serial(std::string serial_name, int baud_rate, int max_try) {
+    boost::system::error_code ec;
     if (serial_port_.is_open()) {
         serial_port_.close(ec);
     }

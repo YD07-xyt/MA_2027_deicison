@@ -60,7 +60,12 @@ SerialNode::SerialNode(const Ros2config& ros2_config, const rclcpp::Node::Shared
         [this](const std_msgs::msg::Bool::SharedPtr msg) { this->fold_callback(msg); }
     );
     this->goal_pub_ = node_->create_publisher<geometry_msgs::msg::PoseStamped>("/goal_pose", 10);
-    recv_thread_ = std::thread(&SerialNode::read_callback, this);
+    // socket 模式在主线程的定时器中接收；串口模式仍由接收线程阻塞读取
+    if (serial_config_.sending_method == io::SendingMethod::SOCKET) {
+        this->recv_timer_ = node_->create_wall_timer(std::chrono::milliseconds(1), [this]() { this->read_socket_data(); });
+    } else {
+        recv_thread_ = std::thread(&SerialNode::read_callback, this);
+    }
 }
 void SerialNode::init_bt() {
     nav_data.nav_state = bt::NavState::IDLE;
@@ -170,19 +175,12 @@ void SerialNode::cmd_callback(const geometry_msgs::msg::Twist::SharedPtr cmd_dat
     }
 };
 void SerialNode::read_socket_data() {
-    const int timeout_ms = 10; // 超时时间
-    const int sleep_ms = 5; // 无数据时的休眠时间
-    std::get<std::vector<io::ReceiveSocketData>>(receive_data_variant_).clear();
-
-    // 接收所有可用数据包
-    if (serial_driver
-            ->receive_all_socket(std::get<std::vector<io::ReceiveSocketData>>(receive_data_variant_), timeout_ms))
-    {
-        if (!std::get<std::vector<io::ReceiveSocketData>>(receive_data_variant_).empty()) {
-            std::lock_guard<std::mutex> lock(data_mutex_);
-
-            // 发布所有接收到的数据包
-            for (const auto& packet: std::get<std::vector<io::ReceiveSocketData>>(receive_data_variant_)) {
+    // 定时器在主线程调用，非阻塞：一次回调内取走所有已到达的数据报
+    auto& packets = std::get<std::vector<io::ReceiveSocketData>>(receive_data_variant_);
+    // receive_all_socket 每次调用都会清空 packets，因此每轮先拷贝出来再处理
+    while (serial_driver->receive_all_socket(packets, 0)) {
+        const std::vector<io::ReceiveSocketData> batch = packets;
+        for (const auto& packet: batch) {
                 double now = std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();
                 receive_speed_.vx = packet.vx;
                 receive_speed_.vy = packet.vy;
@@ -228,11 +226,7 @@ void SerialNode::read_socket_data() {
                     game_data.current_hp = packet.current_hp;
                     game_data.projectile_allowance = packet.projectile_allowance;
                 }
-            }
         }
-    } else {
-        // 没有数据时短暂休眠，避免 CPU 空转
-        std::this_thread::sleep_for(std::chrono::milliseconds(sleep_ms));
     }
 }
 

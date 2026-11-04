@@ -33,8 +33,8 @@ bool SendSerialData::deserialize(const uint8_t* data, size_t size) {
 
 // 序列化
 std::vector<uint8_t> SendSocketData::serialize() const {
-    std::vector<uint8_t> buffer(sizeof(SendSerialData));
-    memcpy(buffer.data(), this, sizeof(SendSerialData));
+    std::vector<uint8_t> buffer(sizeof(SendSocketData));
+    memcpy(buffer.data(), this, sizeof(SendSocketData));
     return buffer;
 }
 

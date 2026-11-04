@@ -20,15 +20,24 @@ namespace bt {
 class RmDecision {
 public:
     explicit RmDecision(bt::DecisionConfig decision_config);
-
+    /**
+    @brief tick the behavior tree once, and update the blackboard with the latest game data and navigation data.
+    */
     auto tree_tick(
         Game2Decision& game_data,
         Nav2Decision& nav_data,
         std::optional<std::chrono::system_clock::duration> timeout
     ) -> void;
+    /**
+    @brief get the latest decision data from the blackboard.
+    @return a pair of optional decision data for game and navigation.
+    */
     auto get_data() -> std::pair<std::optional<Decision2Game>, std::optional<Decision2Nav>>;
 
 private:
+    /**
+    @brief register custom nodes and enums to the behavior tree factory.
+    */
     void setting_tree_custom_node();
 
 private:

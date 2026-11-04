@@ -1,0 +1,10 @@
+  <BehaviorTree ID="hit_enemy_outpost_subtree">
+      <Sequence>
+          <!-- 检查敌方哨站是否被摧毁  未摧毁继续执行-->
+          <CheckValue key="{current_enemy_outpost_hp}" operator="le" value="40"/>
+          <!-- <IsGameTimeExceeded game_time="{game_time}" threshold="300"/>
+          <IsGameTimeLess game_time="{game_time}" threshold="420"/> -->
+          <Nav2Pose goal="2.65,4.36,1.0" nav_state="{nav_state}" goal2nav="{goal}"/>
+          <Sleep msec="2000"/>
+      </Sequence>
+  </BehaviorTree>

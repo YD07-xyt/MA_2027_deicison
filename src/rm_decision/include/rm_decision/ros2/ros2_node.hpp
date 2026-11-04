@@ -1,3 +1,4 @@
+/// 已弃用
 #pragma once
 #include <Eigen/Geometry>
 #include <action_msgs/msg/goal_status_array.hpp>

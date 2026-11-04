@@ -1,6 +1,6 @@
 #pragma once
 
-#include "config.hpp"
+#include "rm_decision/config.hpp"
 #include <behaviortree_cpp/basic_types.h>
 #include <behaviortree_cpp/condition_node.h>
 #include <spdlog/spdlog.h>
@@ -16,7 +16,7 @@ public:
     BT::InputPort<bt::Point>("enemy_pose")};
   };
 
-  BT::NodeStatus tick(){
+  BT::NodeStatus tick() override{
     if(!getInput<bt::Point>("current_pose",current_pose_)){
         return BT::NodeStatus::FAILURE;
     }

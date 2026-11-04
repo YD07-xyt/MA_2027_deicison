@@ -27,13 +27,14 @@ RmDecision::RmDecision(bt::DecisionConfig decision_config): config_(decision_con
     file << xml_models;
     file.close();
     logger::info(logger, "Generated XML file");
-
+    //加载xml行为树文件
     try {
         tree_ = factory_.createTreeFromFile(config_.tree_xml_file);
     } catch (const BT::RuntimeError& e) {
         logger::error(logger, "Failed to load BT from '{}': {}", config_.tree_xml_file.c_str(), e.what());
         throw;
     }
+    
     tree_blackboard_ = tree_.rootBlackboard();
     intput_blackboard_ = std::make_shared<Intputblackboard>(tree_blackboard_);
     output_blackboard_ = std::make_shared<Outputblackboard>(tree_blackboard_);

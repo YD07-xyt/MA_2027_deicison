@@ -1,0 +1,30 @@
+  <!-- ========== 巡逻子树（4点巡逻，每个点成功后才等待） ========== -->
+  <BehaviorTree ID="patrol_subtree">
+    <Repeat num_cycles="-1">
+      <Sequence>
+        <!-- 点1 -->
+        <Timeout msec="24000">
+          <Nav2Pose goal="2.18,3.2,1.0" nav_state="{nav_state}" goal2nav="{goal}"/>
+        </Timeout>
+        <Sleep msec="1000"/>
+
+        <!-- 点2 -->
+        <Timeout msec="25000">
+          <Nav2Pose goal="2.15,-0.73,1.0" nav_state="{nav_state}" goal2nav="{goal}"/>
+        </Timeout>
+        <Sleep msec="1000"/>
+
+        <!-- 点3 -->
+        <Timeout msec="25000">
+          <Nav2Pose goal="8.56,3.07,1.0" nav_state="{nav_state}" goal2nav="{goal}"/>
+        </Timeout>
+        <Sleep msec="1000"/>
+
+        <!-- 点4 -->
+        <Timeout msec="25000">
+          <Nav2Pose goal="10.6,-0.54,1.0" nav_state="{nav_state}" goal2nav="{goal}"/>
+        </Timeout>
+        <Sleep msec="1000"/>
+      </Sequence>
+    </Repeat>
+  </BehaviorTree>

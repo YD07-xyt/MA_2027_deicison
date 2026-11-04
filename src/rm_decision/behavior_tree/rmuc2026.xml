@@ -10,13 +10,15 @@
                         min_projectile_allowance="10" 
                         current_hp="{current_hp}" 
                         min_hp="60"/>
+            <CheckValue key="{current_projectile_allowance}" operator="le" value="10"/> 
+            <CheckValue key="{current_hp}" operator="le" value="60"/> 
             <Nav2Pose goal="0.0,0.0,1.0" nav_state="{nav_state}" goal2nav="{goal}"/>
             <Sleep msec="4000"/>
           </Sequence>
           <Sequence>
             <IsRobotHealth current_projectile_allowance="{current_projectile_allowance}" 
-                          min_projectile_allowance="70" 
-                          current_hp="{current_hp}" 
+                          min_projectile_allowance="70"
+                          current_hp="{current_hp}"
                           min_hp="350"/>
             <!-- 健康情况下，执行备选任务 -->
             <ReactiveFallback>
@@ -68,6 +70,8 @@
           <Sleep msec="2000"/>
       </Sequence>
   </BehaviorTree>
+
+
   <!-- ========== 巡逻子树（4点巡逻，每个点成功后才等待） ========== -->
   <BehaviorTree ID="patrol_subtree">
     <Repeat num_cycles="-1">

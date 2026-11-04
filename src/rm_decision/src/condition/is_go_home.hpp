@@ -16,7 +16,7 @@ public:
             BT::InputPort<int>("min_hp")}; // 阈值
   }
 
-  BT::NodeStatus tick() {
+  BT::NodeStatus tick() override {
     // 从端口获取值（会自动关联黑板）
     if (!getInput<int>("current_projectile_allowance",
                        current_projectile_allowance_) ||

@@ -12,6 +12,7 @@
 #include "condition/is_go_home.hpp"
 #include "condition/is_robot_health.hpp"
 #include "condition/set_blackboard_bool.hpp"
+#include "tools/logger.hpp"
 #include <fstream>
 namespace bt {
 RmDecision::RmDecision(bt::DecisionConfig decision_config): config_(decision_config) {
@@ -26,7 +27,13 @@ RmDecision::RmDecision(bt::DecisionConfig decision_config): config_(decision_con
     file << xml_models;
     file.close();
     logger::info(logger, "Generated XML file");
-    tree_ = factory_.createTreeFromFile(config_.tree_xml_file.c_str());
+
+    try {
+        tree_ = factory_.createTreeFromFile(config_.tree_xml_file);
+    } catch (const BT::RuntimeError& e) {
+        logger::error(logger, "Failed to load BT from '{}': {}", config_.tree_xml_file.c_str(), e.what());
+        throw;
+    }
     tree_blackboard_ = tree_.rootBlackboard();
     intput_blackboard_ = std::make_shared<Intputblackboard>(tree_blackboard_);
     output_blackboard_ = std::make_shared<Outputblackboard>(tree_blackboard_);

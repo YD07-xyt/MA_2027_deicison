@@ -19,13 +19,11 @@
 #include <rclcpp/timer.hpp>
 #include <std_msgs/msg/int16.hpp>
 //
-#include <nlohmann/detail/json_pointer.hpp>
 
 //serial
 #include "serial/serial.h"
 #include "serial/config.hpp"
 #include "tools/logger.hpp"
-#include "tools/plotter.hpp"
 //rm_decision
 #include "rm_decision/config.hpp"
 #include "rm_decision/rm_decision.hpp"
@@ -36,10 +34,7 @@ namespace ros2 {
 
 class SerialNode {
 public:
-    SerialNode(
-        const Ros2config& ros2_config,
-        const rclcpp::Node::SharedPtr node
-    );
+    SerialNode(const Ros2config& ros2_config, const rclcpp::Node::SharedPtr node);
     ~SerialNode() {
         running_ = false;
         if (recv_thread_.joinable()) {
@@ -56,7 +51,7 @@ private:
     std::optional<bt::Decision2Game> decision2game_data;
     void rm_bt_callback();
     void init_bt();
-    
+
 private:
     io::SerialConfig serial_config_;
 
@@ -76,8 +71,8 @@ private:
     std::mutex data_mutex_;
 
 private:
-    tools::Plotter plotter;
-    std::shared_ptr<spdlog::logger> ros2_logger_; 
+    std::shared_ptr<spdlog::logger> ros2_logger_;
+
 private:
     bool is_decision_ = true;
 
@@ -100,9 +95,10 @@ private:
     rclcpp::TimerBase::SharedPtr bt_timer_;
     rclcpp::TimerBase::SharedPtr send_timer_;
     rclcpp::TimerBase::SharedPtr recv_timer_;
-   
+    rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr cmd_speed_pub_;
+    rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr recv_speed_pub_;
 
-    void odom_callback(const nav_msgs::msg::Odometry::SharedPtr msg){};
+    void odom_callback(const nav_msgs::msg::Odometry::SharedPtr msg) {};
     void nav_feedback_callback(const std_msgs::msg::Int16::SharedPtr msg);
     void cmd_callback(const geometry_msgs::msg::Twist::SharedPtr cmd_data);
     void fold_callback(const std_msgs::msg::Bool::SharedPtr msg);
@@ -110,7 +106,7 @@ private:
     void read_callback();
     void read_socket_data();
     void read_serial_data();
-    void plotter_debug_cmd(double& now, double vx, double vy, double wz);
-    void plotter_debug_receive(double& now);
+    void
+    publish_speed(const rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr& pub, double vx, double vy, double wz);
 };
 } // namespace io

@@ -47,7 +47,7 @@ SerialNode::SerialNode(const Ros2config& ros2_config, const rclcpp::Node::Shared
         10,
         [this](const std_msgs::msg::Int16::SharedPtr msg) { this->nav_feedback_callback(msg); }
     );
-    this->bt_timer_ = node_->create_wall_timer(std::chrono::milliseconds(5), [this]() { this->rm_bt_callback(); });
+    this->bt_timer_ = node_->create_wall_timer(std::chrono::milliseconds(10), [this]() { this->rm_bt_callback(); });
     this->send_timer_ = node_->create_wall_timer(std::chrono::milliseconds(1), [this]() { this->send_callback(); });
     this->odom_sub_ = node_->create_subscription<nav_msgs::msg::Odometry>(
         "/odometry",
@@ -60,6 +60,8 @@ SerialNode::SerialNode(const Ros2config& ros2_config, const rclcpp::Node::Shared
         [this](const std_msgs::msg::Bool::SharedPtr msg) { this->fold_callback(msg); }
     );
     this->goal_pub_ = node_->create_publisher<geometry_msgs::msg::PoseStamped>("/goal_pose", 10);
+    this->cmd_speed_pub_ = node_->create_publisher<geometry_msgs::msg::Twist>("/serial/cmd_speed", 10);
+    this->recv_speed_pub_ = node_->create_publisher<geometry_msgs::msg::Twist>("/serial/recv_speed", 10);
     // socket 模式在主线程的定时器中接收；串口模式仍由接收线程阻塞读取
     if (serial_config_.sending_method == io::SendingMethod::SOCKET) {
         this->recv_timer_ = node_->create_wall_timer(std::chrono::milliseconds(1), [this]() { this->read_socket_data(); });
@@ -131,7 +133,6 @@ void SerialNode::read_callback() {
 }
 
 void SerialNode::cmd_callback(const geometry_msgs::msg::Twist::SharedPtr cmd_data) {
-    double now = std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();
     if (serial_config_.sending_method == io::SendingMethod::SERIAL) {
         std::get<io::SendSerialData>(send_cmd_variant_).sof_0 = SOF0;
         std::get<io::SendSerialData>(send_cmd_variant_).sof_1 = SOF1;
@@ -142,8 +143,8 @@ void SerialNode::cmd_callback(const geometry_msgs::msg::Twist::SharedPtr cmd_dat
         std::get<io::SendSerialData>(send_cmd_variant_).crc16 =
             std::get<io::SendSerialData>(send_cmd_variant_).calculate_crc16();
         serial_driver->send_serial(std::get<io::SendSerialData>(send_cmd_variant_));
-        plotter_debug_cmd(
-            now,
+        publish_speed(
+            cmd_speed_pub_,
             std::get<io::SendSerialData>(send_cmd_variant_).vx,
             std::get<io::SendSerialData>(send_cmd_variant_).vy,
             std::get<io::SendSerialData>(send_cmd_variant_).wz
@@ -167,8 +168,8 @@ void SerialNode::cmd_callback(const geometry_msgs::msg::Twist::SharedPtr cmd_dat
         );
         // spdlog::info("serial 发送 crc16:{}",send_cmd.crc16);
         //serial_driver->send_socket(std::get<SendSocketData>(send_cmd_variant_));
-        plotter_debug_cmd(
-            now,
+        publish_speed(
+            cmd_speed_pub_,
             std::get<io::SendSocketData>(send_cmd_variant_).vx,
             std::get<io::SendSocketData>(send_cmd_variant_).vy,
             std::get<io::SendSocketData>(send_cmd_variant_).wz
@@ -182,7 +183,6 @@ void SerialNode::read_socket_data() {
     while (serial_driver->receive_all_socket(packets, 0)) {
         const std::vector<io::ReceiveSocketData> batch = packets;
         for (const auto& packet: batch) {
-                double now = std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();
                 receive_speed_.vx = packet.vx;
                 receive_speed_.vy = packet.vy;
                 receive_speed_.wz = packet.wz;
@@ -196,7 +196,7 @@ void SerialNode::read_socket_data() {
                     packet.game_time,
                     packet.is_enemy_outpost_destroyed
                 );
-                plotter_debug_receive(now);
+                publish_speed(recv_speed_pub_, receive_speed_.vx, receive_speed_.vy, receive_speed_.wz);
 
                 int temp = packet.is_enemy_outpost_destroyed;
                 auto time = std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -245,7 +245,6 @@ void SerialNode::read_serial_data() {
 
             // 发布所有接收到的数据包
             for (const auto& packet: std::get<std::vector<io::ReceiveSerialData>>(receive_data_variant_)) {
-                double now = std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();
                 // rm_data_.current_hp = packet.current_hp;
                 // rm_data_.game_progress = packet.game_progress;
                 receive_speed_.vx = packet.vx;
@@ -262,7 +261,7 @@ void SerialNode::read_serial_data() {
                     packet.game_time,
                     packet.is_enemy_outpost_destroyed
                 );
-                plotter_debug_receive(now);
+                publish_speed(recv_speed_pub_, receive_speed_.vx, receive_speed_.vy, receive_speed_.wz);
                 if (this->is_decision_) {
                     /*TODO:set Topics2Blackboard::GameData*/
 
@@ -317,20 +316,16 @@ void SerialNode::init_serial_driver() {
     }
 };
 
-void SerialNode::plotter_debug_cmd(double& now, double vx, double vy, double wz) {
-    nlohmann::json cmd_data_json;
-    cmd_data_json["ts"] = now;
-    cmd_data_json["cmd_vx"] = vx;
-    cmd_data_json["cmd_vy"] = vy;
-    cmd_data_json["cmd_wz"] = wz;
-    plotter.plot(cmd_data_json);
-}
-void SerialNode::plotter_debug_receive(double& now) {
-    nlohmann::json true_speed_data;
-    true_speed_data["ts"] = now;
-    true_speed_data["true_vx"] = receive_speed_.vx;
-    true_speed_data["true_vy"] = receive_speed_.vy;
-    true_speed_data["true_wz"] = receive_speed_.wz;
-    plotter.plot(true_speed_data);
+void SerialNode::publish_speed(
+    const rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr& pub,
+    double vx,
+    double vy,
+    double wz
+) {
+    geometry_msgs::msg::Twist msg;
+    msg.linear.x = vx;
+    msg.linear.y = vy;
+    msg.angular.z = wz;
+    pub->publish(msg);
 }
 } // namespace io

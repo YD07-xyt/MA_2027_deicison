@@ -83,7 +83,7 @@ void SerialNode::rm_bt_callback() {
         goal_pub_->publish(goal);
     }
     if (toGame.has_value()) {
-        decision2game_data->sentry_model = toGame->sentry_model;
+        decision2game_data = toGame;
     }
 };
 void SerialNode::nav_feedback_callback(const std_msgs::msg::Int16::SharedPtr msg) {
@@ -106,7 +106,15 @@ void SerialNode::fold_callback(const std_msgs::msg::Bool::SharedPtr msg) {
 }
 
 void SerialNode::send_callback() {
-    serial_driver->send_socket(std::get<io::SendSocketData>(send_cmd_variant_));
+    // 只在 socket 模式下发送；串口模式的发送由 cmd_callback 直接完成
+    if (serial_config_.sending_method != io::SendingMethod::SOCKET) {
+        return;
+    }
+    auto* data = std::get_if<io::SendSocketData>(&send_cmd_variant_);
+    if (data == nullptr) {
+        return;
+    }
+    serial_driver->send_socket(*data);
 }
 void SerialNode::read_callback() {
     while (running_) {
@@ -117,6 +125,7 @@ void SerialNode::read_callback() {
         }
     }
 }
+
 void SerialNode::cmd_callback(const geometry_msgs::msg::Twist::SharedPtr cmd_data) {
     double now = std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();
     if (serial_config_.sending_method == io::SendingMethod::SERIAL) {

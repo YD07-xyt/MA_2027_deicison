@@ -5,6 +5,7 @@
 #include <memory>
 #include <optional>
 #include <rclcpp/node.hpp>
+#include <spdlog/logger.h>
 #include <std_msgs/msg/bool.hpp>
 #include <string>
 #include <variant>
@@ -23,6 +24,7 @@
 //serial
 #include "serial/serial.h"
 #include "serial/config.hpp"
+#include "tools/logger.hpp"
 #include "tools/plotter.hpp"
 //rm_decision
 #include "rm_decision/config.hpp"
@@ -75,7 +77,7 @@ private:
 
 private:
     tools::Plotter plotter;
-
+    std::shared_ptr<spdlog::logger> ros2_logger_; 
 private:
     bool is_decision_ = true;
 

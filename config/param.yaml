@@ -1,4 +1,5 @@
 serial_node:
+    is_debug: "false"  # "true" 时打印 spdlog debug 日志
     serial:
       serial_name: "/dev/ttyACM0" #串口名称
       baud_rate: 115200

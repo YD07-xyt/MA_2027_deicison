@@ -8,6 +8,7 @@ struct Ros2config {
     io::SerialConfig serial_config;
     bt::DecisionConfig decision_config;
     bool is_decision = true;
+    bool is_debug = false;
 };
 inline bool load_config(const std::string& filepath, Ros2config& cfg) {
     try {
@@ -36,6 +37,11 @@ inline bool load_config(const std::string& filepath, Ros2config& cfg) {
         // ----- decision 段 -----
         YAML::Node d = node["decision"];
         cfg.is_decision = d["is_decision"].as<bool>();
+        // ----- debug 开关：true 时 spdlog 输出 debug 级别日志 -----
+        if (node["is_debug"]) {
+            std::string v = node["is_debug"].as<std::string>();
+            cfg.is_debug = (v == "true" || v == "True" || v == "TRUE" || v == "1" || v == "yes");
+        }
         cfg.decision_config.tree_xml_file = d["tree_xml_file"].as<std::string>();
         cfg.decision_config.tree_node_model_export_path = d["tree_node_model_export_path"].as<std::string>();
         cfg.decision_config.map_tf_name = d["map_tf_name"].as<std::string>();

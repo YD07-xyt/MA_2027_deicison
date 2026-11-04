@@ -11,21 +11,19 @@
 #include <tf2_geometry_msgs/tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 
 namespace ros2 {
-SerialNode::SerialNode(
-   const Ros2config& ros2_config,
-    const rclcpp::Node::SharedPtr node
-):
+SerialNode::SerialNode(const Ros2config& ros2_config, const rclcpp::Node::SharedPtr node):
     node_(node),
     running_(true),
     serial_config_(ros2_config.serial_config),
     waitStartTime(std::chrono::steady_clock::now()),
     rm_decision_(ros2_config.decision_config),
     is_decision_(ros2_config.is_decision) {
+    ros2_logger_ = logger::create_colored_logger("ros2");
     serial_driver = std::make_shared<io::SerialDriver>();
     init_serial_driver();
     init_bt();
 
-    spdlog::info(
+    logger::info(ros2_logger_,
         "node inner socket_send_name:{} socket_receive_name:{} ",
         serial_config_.socket_send_name.c_str(),
         serial_config_.socket_receive_name.c_str()
@@ -34,7 +32,7 @@ SerialNode::SerialNode(
     auto is_open_serial =
         this->serial_driver->open_socket(serial_config_.socket_receive_name, serial_config_.socket_send_name);
 
-    spdlog::info("is_open_serial:{}", is_open_serial);
+     logger::info(ros2_logger_,"is_open_serial:{}", is_open_serial);
     if (!is_open_serial) {
         // serial_driver->reopen(serial_name,baud_rate, max_try);
     }
@@ -79,7 +77,7 @@ void SerialNode::rm_bt_callback() {
         q.normalize(); // 保险起见归一化
 
         goal.pose.orientation = tf2::toMsg(q);
-        spdlog::info("[test]pub goal:({},{},{})", goal.pose.position.x, goal.pose.position.y, toNav->goal_point.yaw);
+        logger::info(ros2_logger_,"[test]pub goal:({},{},{})", goal.pose.position.x, goal.pose.position.y, toNav->goal_point.yaw);
         goal_pub_->publish(goal);
     }
     if (toGame.has_value()) {
@@ -149,16 +147,19 @@ void SerialNode::cmd_callback(const geometry_msgs::msg::Twist::SharedPtr cmd_dat
         std::get<io::SendSocketData>(send_cmd_variant_).sof_0 = SOF0;
         std::get<io::SendSocketData>(send_cmd_variant_).sof_1 = SOF1;
         // std::get<SendSocketData>(send_cmd_variant_).sentry_pose=3;
-        float multiple = 1.2;
+        float multiple = 1.0;
         std::get<io::SendSocketData>(send_cmd_variant_).vx = multiple * cmd_data->linear.x;
         std::get<io::SendSocketData>(send_cmd_variant_).vy = multiple * cmd_data->linear.y;
         std::get<io::SendSocketData>(send_cmd_variant_).wz = multiple * cmd_data->angular.z;
         // std::get<SendSocketData>(send_cmd_variant_).is_chassis_follow = 1;
         // std::get<SendSocketData>(send_cmd_variant_).robot_yaw = 360.0;
-        spdlog::info( "serial 发送 cmd vx: {} ,vy :{},wz:{}",multiple * cmd_data->linear.x,
-                       multiple * cmd_data->linear.y,
-                       multiple * cmd_data->angular.z);
-          // spdlog::info("serial 发送 crc16:{}",send_cmd.crc16);
+        logger::debug(ros2_logger_,
+            "serial 发送 cmd vx: {} ,vy :{},wz:{}",
+            multiple * cmd_data->linear.x,
+            multiple * cmd_data->linear.y,
+            multiple * cmd_data->angular.z
+        );
+        // spdlog::info("serial 发送 crc16:{}",send_cmd.crc16);
         //serial_driver->send_socket(std::get<SendSocketData>(send_cmd_variant_));
         plotter_debug_cmd(
             now,
@@ -175,7 +176,8 @@ void SerialNode::read_socket_data() {
 
     // 接收所有可用数据包
     if (serial_driver
-            ->receive_all_socket(std::get<std::vector<io::ReceiveSocketData>>(receive_data_variant_), timeout_ms)) {
+            ->receive_all_socket(std::get<std::vector<io::ReceiveSocketData>>(receive_data_variant_), timeout_ms))
+    {
         if (!std::get<std::vector<io::ReceiveSocketData>>(receive_data_variant_).empty()) {
             std::lock_guard<std::mutex> lock(data_mutex_);
 
@@ -186,7 +188,7 @@ void SerialNode::read_socket_data() {
                 receive_speed_.vy = packet.vy;
                 receive_speed_.wz = packet.wz;
                 // rm_data_pub_->publish(rm_data_);
-                spdlog::debug(
+                 logger::debug(ros2_logger_,
                     "Received-HP:{},Progress:{},projectile_allowance:{},game_"
                     "time:{},is_enemy_outpost_destroyed:{}",
                     packet.current_hp,
@@ -221,7 +223,7 @@ void SerialNode::read_socket_data() {
                     } else if (packet.is_enemy_outpost_destroyed == 3) {
                         game_data.current_enemy_outpost_hp = 300;
                         game_data.ours_fort_occ_state = true;
-                        spdlog::info("ours fort is occupied");
+                        logger::info(ros2_logger_,"ours fort is occupied");
                     }
                     game_data.current_hp = packet.current_hp;
                     game_data.projectile_allowance = packet.projectile_allowance;
@@ -241,7 +243,8 @@ void SerialNode::read_serial_data() {
 
     // 接收所有可用数据包
     if (serial_driver
-            ->receive_all_serial(std::get<std::vector<io::ReceiveSerialData>>(receive_data_variant_), timeout_ms)) {
+            ->receive_all_serial(std::get<std::vector<io::ReceiveSerialData>>(receive_data_variant_), timeout_ms))
+    {
         if (!std::get<std::vector<io::ReceiveSerialData>>(receive_data_variant_).empty()) {
             std::lock_guard<std::mutex> lock(data_mutex_);
 

@@ -71,7 +71,8 @@ void SerialNode::init_bt() {
     nav_data.nav_state = bt::NavState::IDLE;
 }
 void SerialNode::rm_bt_callback() {
-    rm_decision_.tree_tick(game_data, nav_data, std::chrono::milliseconds(10));
+    //传入的延迟为0,有回调的频率控制
+    rm_decision_.tree_tick(game_data, nav_data, std::chrono::milliseconds(0));
     auto [toGame, toNav] = rm_decision_.get_data();
     if (toNav.has_value()) {
         geometry_msgs::msg::PoseStamped goal;

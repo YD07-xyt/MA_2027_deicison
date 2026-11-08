@@ -2,7 +2,7 @@
 /log
 /install
 /build
-
+.vscode
 ## vscode
 /.vscode
 

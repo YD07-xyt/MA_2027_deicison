@@ -10,7 +10,8 @@ serial_node:
     decision:
       is_decision: false #是否决策
       #行为树xml位置
-      tree_xml_file: "src/rm_decision/behavior_tree/rmuc2026.xml"
+      # tree_xml_file: "src/rm_decision/behavior_tree/rmuc2026.xml"
+      tree_xml_file: "src/rm_decision/behavior_tree/rmul2027.xml"
       #行为树模型导出位置(可视化)
       tree_node_model_export_path: "src/rm_decision/behavior_tree/test/generated_models.xml"
       #决策ros2 发布坐标系

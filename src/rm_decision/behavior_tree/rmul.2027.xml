@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 2027联盟赛决策行为树 -->
+<root BTCPP_format="4"
+      main_tree_to_execute="rmul2027">
+  <BehaviorTree ID="rmul2027">
+    <Sequence>
+      <!-- 游戏开始 -->
+      <IsGameStart current_game_state=""/>
+      <!-- 反应式选择节点 -->
+      <ReactiveFallback>
+        <!-- 优先判断机器人状态 -->
+        <IsRobotHealth min_hp="60"
+                       current_hp="{current_hp}"
+                       min_projectile_allowance="10"
+                       current_projectile_allowance="{current_projectile_allowance}"/>
+        <Timeout msec="15000">
+          <Nav2Pose goal2nav="{goal1}" nav_state="{nav_state}" goal="{goal}"/>
+        </Timeout>
+        <!-- 暂时占点延时替代控制区占领 -->
+        <!-- 导航占点时间延时--> 
+        <AsyncSleep msec="3000"/>
+        <Timeout msec="15000">
+          <Nav2Pose goal2nav="{goal2nav}" nav_state="{nav_state}" goal="{goal}"/>
+        </Timeout>
+        <!-- 导航占点时间延时--> 
+        <AsyncSleep msec="3000"/>
+        <Timeout msec="15000">
+          <Nav2Pose goal2nav="{goal3nav}" nav_state="{nav_state}" goal="{goal}"/>
+        </Timeout>
+        <!-- 导航占点时间延时--> 
+        <AsyncSleep msec="3000"/>
+      </ReactiveFallback>
+      <!-- 状态不好以及导航占点时间延时后，返回起点 -->
+      <IsGoHome min_hp="60"
+                current_hp="{current_hp}"
+                min_projectile_allowance="10"
+                current_projectile_allowance="{current_projectile_allowance}"/>
+    </Sequence>
+  </BehaviorTree>
+
+  <!-- Description of Node Models (used by Groot) -->
+  <!-- 节点描述 -->
+  <TreeNodesModel>
+    <Action ID="AsyncSleep">
+      <input_port name="msec"
+                  type="double"/>
+    </Action>
+    <Condition ID="IsGameStart">
+      <input_port name="current_game_state"
+                  type="bool"/>
+    </Condition>
+    <Condition ID="IsGoHome">
+      <input_port name="min_hp"
+                  type="int"/>
+      <input_port name="current_hp"
+                  type="int"/>
+      <input_port name="min_projectile_allowance"
+                  type="int"/>
+      <input_port name="current_projectile_allowance"
+                  type="int"/>
+    </Condition>
+    <Condition ID="IsRobotHealth">
+      <input_port name="min_hp"
+                  type="int"/>
+      <input_port name="current_hp"
+                  type="int"/>
+      <input_port name="min_projectile_allowance"
+                  type="int"/>
+      <input_port name="current_projectile_allowance"
+                  type="int"/>
+    </Condition>
+    <Action ID="Nav2Pose">
+      <output_port name="goal2nav"
+                   type="bt::Point">输出给导航的目标点</output_port>
+      <input_port name="nav_state"
+                  type="bt::NavState">导航状态</input_port>
+      <input_port name="goal"
+                  type="bt::Point">目标点输入</input_port>
+    </Action>
+  </TreeNodesModel>
+
+</root>

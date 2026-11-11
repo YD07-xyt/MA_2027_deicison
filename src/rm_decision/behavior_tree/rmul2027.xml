@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<root BTCPP_format="4" main_tree_to_execute="main_tree">
+  <BehaviorTree ID="main_tree">
+    <Sequence>
+      <IsGameStart current_game_state="{is_game_start}"/>
+      <ReactiveFallback>
+        <SubTree ID="is_go_home_subtree"
+                 _autoremap="true"/>
+        <SubTree ID="patrol_subtree"/>
+      </ReactiveFallback>
+    </Sequence>
+  </BehaviorTree>
+
+  <BehaviorTree ID="chase_enemy">
+    <AlwaysSuccess/>
+  </BehaviorTree>
+
+  <BehaviorTree ID="is_go_home_subtree">
+    <Sequence>
+      <CheckValue key="{current_projectile_allowance}"
+                  operator="le"
+                  value="10"/>
+      <CheckValue key="{current_hp}"
+                  operator="le"
+                  value="60"/>
+      <Nav2Pose goal2nav="{goal}"
+                nav_state="{nav_state}"
+                goal="0.0,0.0,0.0"/>
+      <AsyncSleep msec="4000"/>
+    </Sequence>
+  </BehaviorTree>
+
+  <BehaviorTree ID="patrol_subtree">
+    <Repeat num_cycles="-1">
+      <Sequence>
+        <Timeout msec="15000">
+        <!--  暂时用0.0,0.0,0.0作为目标点，后续再根据实际情况修改 -->
+          <Nav2Pose goal2nav="{goal}"
+                    nav_state="{nav_state}"
+                    goal="0.0,0.0,0.0"/>
+        </Timeout>
+        <Timeout msec="15000">
+          <Nav2Pose goal2nav="{goal}"
+                    nav_state="{nav_state}"
+                    goal="0.0,0.0,0.0"/>
+        </Timeout>
+      </Sequence>
+    </Repeat>
+  </BehaviorTree>
+
+  <!-- Description of Node Models (used by Groot) -->
+  <TreeNodesModel>
+    <Action ID="AsyncSleep">
+      <input_port name="msec"
+                  type="double"/>
+    </Action>
+    <Condition ID="CheckValue">
+      <input_port name="key"
+                  type="int">被检查的黑板 int</input_port>
+      <input_port name="operator"
+                  type="std::string">对比运算符: eq|ne|gt|ge|lt|le</input_port>
+      <input_port name="value"
+                  type="int">对比值</input_port>
+    </Condition>
+    <Condition ID="IsGameStart">
+      <input_port name="current_game_state"
+                  type="bool"/>
+    </Condition>
+    <Action ID="Nav2Pose">
+      <output_port name="goal2nav"
+                   type="bt::Point">输出给导航的目标点</output_port>
+      <input_port name="nav_state"
+                  type="bt::NavState">导航状态</input_port>
+      <input_port name="goal"
+                  type="bt::Point">目标点输入</input_port>
+    </Action>
+  </TreeNodesModel>
+
+</root>

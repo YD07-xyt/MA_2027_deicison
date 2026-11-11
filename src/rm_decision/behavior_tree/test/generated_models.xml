@@ -37,6 +37,11 @@
             <input_port name="min_projectile_allowance" type="int"/>
             <input_port name="current_projectile_allowance" type="int"/>
         </Condition>
+        <Condition ID="CheckValue">
+            <input_port name="key" type="int">被检查的黑板 int</input_port>
+            <input_port name="operator" type="std::string">对比运算符: eq|ne|gt|ge|lt|le</input_port>
+            <input_port name="value" type="int">对比值</input_port>
+        </Condition>
         <Action ID="Nav2Pose">
             <output_port name="goal2nav" type="bt::Point">输出给导航的目标点</output_port>
             <input_port name="nav_state" type="bt::NavState">导航状态</input_port>

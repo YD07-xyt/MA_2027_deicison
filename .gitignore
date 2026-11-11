@@ -3,6 +3,10 @@
 /install
 /build
 
+/.marscode/
+
+src/docs/
+
 ## vscode
 /.vscode
 

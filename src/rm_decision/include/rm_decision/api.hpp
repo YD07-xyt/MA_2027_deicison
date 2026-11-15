@@ -14,6 +14,13 @@ enum NavState {
 struct Nav2Decision {
     NavState nav_state;
 };
+
+struct enemyPose{
+    double x;
+    double y;
+    double z;
+};
+
 struct Game2Decision {
     bool is_game_start;//比赛是否开始
     int current_hp;//哨兵的血量
@@ -30,6 +37,8 @@ enum SentryModel{
     DEFENSE = 2,
     MOVE = 3,
 };
+
+
 struct Decision2Game {
     SentryModel sentry_model;
 };

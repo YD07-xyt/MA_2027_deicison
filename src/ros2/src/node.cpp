@@ -68,6 +68,12 @@ SerialNode::SerialNode(const Ros2config& ros2_config, const rclcpp::Node::Shared
     } else {
         recv_thread_ = std::thread(&SerialNode::read_callback, this);
     }
+
+    this->enemy_pose_sub_ = node_->create_subscription<geometry_msgs::msg::PoseStamped>(
+        "/enemy_pose",
+        10,
+        [this](const geometry_msgs::msg::PoseStamped::SharedPtr msg) { this->enemy_pose_callback(msg); }
+    );
 }
 void SerialNode::init_bt() {
     nav_data.nav_state = bt::NavState::IDLE;
@@ -328,4 +334,14 @@ void SerialNode::publish_speed(
     msg.angular.z = wz;
     pub->publish(msg);
 }
+
+void SerialNode::enemy_pose_callback(const geometry_msgs::msg::PoseStamped::SharedPtr msg) {
+    enemy_pose.x = msg->pose.position.x;
+    enemy_pose.y = msg->pose.position.y;
+    enemy_pose.z = msg->pose.position.z;
+    RCLCPP_INFO(node_->get_logger(),"recived enemy pose:(%f,%f,%f)",
+                enemy_pose.x,
+                enemy_pose.y,
+                enemy_pose.z);
+ }
 } // namespace io

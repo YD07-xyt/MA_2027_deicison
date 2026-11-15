@@ -48,6 +48,7 @@ private:
     bt::DecisionConfig decision_config_;
     bt::Game2Decision game_data;
     bt::Nav2Decision nav_data;
+    bt::enemyPose enemy_pose;
     std::optional<bt::Decision2Game> decision2game_data;
     void rm_bt_callback();
     void init_bt();
@@ -88,6 +89,7 @@ private:
 
 private:
     rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr cmd_sub_;
+    rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr enemy_pose_sub_;
     rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;
     rclcpp::Subscription<std_msgs::msg::Int16>::SharedPtr nav_feedback_sub_;
     rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr goal_pub_;
@@ -106,7 +108,7 @@ private:
     void read_callback();
     void read_socket_data();
     void read_serial_data();
-    void
-    publish_speed(const rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr& pub, double vx, double vy, double wz);
+    void enemy_pose_callback(const geometry_msgs::msg::PoseStamped::SharedPtr msg);
+    void publish_speed(const rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr& pub, double vx, double vy, double wz);
 };
 } // namespace io

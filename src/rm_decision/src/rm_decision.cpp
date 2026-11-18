@@ -4,6 +4,7 @@
 #include "action/nav2pose.hpp"
 #include "action/switch_nav_model.hpp"
 #include "condition/check_blackboard_bool.hpp"
+#include "condition/check_value.hpp"
 #include "condition/is_enemy_outpost_destroyed.hpp"
 #include "condition/is_fort_occupied.hpp"
 #include "condition/is_game_start.hpp"
@@ -71,6 +72,7 @@ void RmDecision::setting_tree_custom_node() {
     factory_.registerNodeType<bt::IsGoHome>("IsGoHome");
     factory_.registerNodeType<bt::IsRobotHealth>("IsRobotHealth");
     factory_.registerNodeType<bt::CheckBlackboardBool>("CheckBlackboardBool");
+    factory_.registerNodeType<bt::CheckValue>("CheckValue");
     factory_.registerNodeType<bt::SetBlackboardBool>("SetBlackboardBool");
     spdlog::info("Loaded all custom nodes");
 };

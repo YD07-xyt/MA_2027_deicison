@@ -18,6 +18,8 @@
 对方自定义装甲模块当前生效的圆形加固区域圆心x,y 半径
 0x0A06
 
+
+
 ## decision
 
 1. if sentry hp < 20 || projectile_allowance_17mm < 10 -->go home
